@@ -34,6 +34,9 @@ function renderTop() {
   const root = createRoot(host)
   mounted.push(root)
   act(() => root.render(sheet.render(() => useUI.getState().closeSheet(sheet.id))))
+  // Personal fork: the plan list sits behind "Choose a different workout".
+  const open = [...host.querySelectorAll('button')].find(b => b.textContent.includes('Choose a different workout'))
+  if (open) act(() => open.click())
   return host
 }
 const header = host => host.querySelector('.muted.small').textContent

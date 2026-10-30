@@ -2630,6 +2630,7 @@ function DayOverride({ iso, close }) {
   const plannedRs = effIds.map(id => st.routines.find(r => r.id === id)).filter(Boolean)
   return <>
     <h3>{fmtDate(iso, true)}</h3>
+    {!picking && <>
     <h4 className="sec" style={{ marginTop: 0 }}>{logged.length ? t('Done') : plannedRs.length ? t('Planned') : t('Rest')}</h4>
     {logged.length > 0 && <div className="list" style={{ marginBottom: 14 }}>
       {logged.map(w => <WorkoutRow key={w.id} w={w} onClick={() => { close(); workoutDetailSheet(w) }} />)}
@@ -2640,10 +2641,8 @@ function DayOverride({ iso, close }) {
         <div className="grow"><div className="tt">{r.name}</div><div className="ss">{r.ex.map(x => exOr(x.id).n).join(' · ')}</div></div>
       </div>)}
     </div>}
+    </>}
     {missed && <div style={{ marginBottom: 14 }}><Button variant="primary" icon="checkCircle" onClick={logIt}>{t('Log this workout')}</Button></div>}
-    {!picking && <Button variant="ghost" className="dim" icon="swap" onClick={() => setPicking(true)}>{t('Choose a different workout')}</Button>}
-    {picking && <>
-    <div className="muted small" style={{ marginBottom: 12 }}>{t('Weekly plan:')} {weeklyNames.length ? deriveSessionName(weeklyNames) : t('Rest')}{changed && <span style={{ color: 'var(--orange)' }}> · {t('changed for this day')}</span>}<br />{t('Sick, missed a day or want a different session? Pick what to train instead.')}</div>
     {canNote && <div className="day-note" style={{ marginBottom: 14 }}>
       <div className="item day-note-row" {...tappable(() => dayNoteSheet(iso))}>
         <span className="lrow-i" style={{ background: 'var(--surface-3)' }}><Icon name={note?.tag ? DAY_NOTE_ICON[note.tag] : 'note'} /></span>
@@ -2653,6 +2652,9 @@ function DayOverride({ iso, close }) {
         <Icon name={note ? 'pencil' : 'plus'} className="chev" />
       </div>
     </div>}
+    {!picking && <Button variant="ghost" className="dim" icon="swap" onClick={() => setPicking(true)}>{t('Choose a different workout')}</Button>}
+    {picking && <>
+    <div className="muted small" style={{ marginBottom: 12 }}>{t('Weekly plan:')} {weeklyNames.length ? deriveSessionName(weeklyNames) : t('Rest')}{changed && <span style={{ color: 'var(--orange)' }}> · {t('changed for this day')}</span>}<br />{t('Sick, missed a day or want a different session? Pick what to train instead.')}</div>
     {coach.length > 0 && <>
       <h4 className="sec" style={{ marginTop: 0 }}>{ownLoop ? t('Your loop') : t('Coach week')}</h4>
       <div className="list" style={{ marginBottom: 8 }}>{coach.map(row)}</div>
