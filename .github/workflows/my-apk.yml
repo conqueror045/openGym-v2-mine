@@ -1,0 +1,33 @@
+# Personal fork: builds an installable APK on every push to main.
+# Debug build = its own app id (ch.duartesantos.opengym.test), so it sits next to the official app.
+name: My APK
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: Build web bundle
+        working-directory: frontend
+        run: |
+          npm ci
+          VITE_MOBILE=1 npx vite build
+          node ../scripts/catalogue/stage-media.mjs dist
+          npx cap sync android
+      - name: Build APK
+        working-directory: frontend/android
+        run: ./gradlew assembleSideloadDebug --no-daemon
+      - uses: actions/upload-artifact@v4
+        with:
+          name: openGym-Alex-apk
+          path: frontend/android/app/build/outputs/apk/sideload/debug/*.apk
