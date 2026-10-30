@@ -1,4 +1,4 @@
-/* Personal fork: move logged sets from one exercise to another (a custom exercise that turned out
+/* Personal fork (openGym Alex): move logged sets from one exercise to another (a custom exercise that turned out
  * to exist in the library, or the wrong one picked). Sets, weights and reps stay as they are; only
  * the exercise they belong to changes. Two entries of the same exercise in one workout are joined. */
 
