@@ -75,6 +75,7 @@ import { workoutText } from './lib/workout-text.js'
 import { workoutCardModel, layoutWorkoutCard, drawWorkoutCard, viewAspect, CARD_FONT } from './lib/workout-card.js'
 import { copyText } from './lib/clipboard.js'
 import { queueRemaining, pinState } from './lib/queue.js'
+import { replaceExercise, workoutsWith } from './lib/replace-exercise.js'
 import { DAY_NOTE_TAGS, DAY_NOTE_LABEL, DAY_NOTE_ICON, dayNoteOf, dayNoteLine, canNoteDay, withDayNote } from './lib/day-notes.js'
 
 const S = () => useStore.getState().S
@@ -1174,12 +1175,44 @@ function ExerciseDetail({ ex, close }) {
         calculator would answer "your 1RM is 23 kg" about a number that gets smaller as you get
         stronger (issue #232). Cardio has none for the same kind of reason. */}
     {!isCardio(ex) && !isAssisted(ex) && <OneRM ex={ex} />}
+    {/* Personal fork: move this exercise's logged sets onto another one, in all or some workouts. */}
+    {workoutsWith(st, ex.id).length > 0 && <>
+      <h4 className="sec">{t('Replace exercise')}</h4>
+      <Button variant="tinted" icon="swap" onClick={() => {
+        const picker = exercisePicker(to => { picker.close(); ui().openSheet(c => <ReplaceInWorkouts from={ex} to={to} close={c} />) }, { title: t('Replace exercise') })
+      }}>{t('Replace exercise')}</Button>
+    </>}
     {instrFor(ex).length > 0 &&<><h4 className="sec">{t('How to')}{getLang() !== 'en' && !instrTranslated(ex) && <span className="dim" style={{ textTransform: 'none', letterSpacing: 0 }}> · {t('instructions in English')}</span>}</h4><ol className="steps-list">{instrFor(ex).map((s, i) => <li key={i}>{s}</li>)}</ol></>}
     {/* The catalogue is community-edited (catalogue/README.md): a wrong muscle, a clumsy step or a
         missing translation is one tap from an issue that already names the exercise. */}
     {!isCustomEx(ex) && !ex.missing && <a className="small dim exfix-link" target="_blank" rel="noopener"
       href={'https://github.com/DuarteSantos8/openGym/issues/new?template=exercise.yml&exercise=' + encodeURIComponent(ex.id + ', ' + ex.n)}>
       <Icon name="pencil" /> {t('Suggest a fix for this exercise')}</a>}
+  </>
+}
+function ReplaceInWorkouts({ from, to, close }) {
+  const st = useStore(s => s.S)
+  const ws = workoutsWith(st, from.id)
+  const [pick, setPick] = useState(() => new Set(ws.map(w => w.id)))
+  const flip = id => setPick(p => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n })
+  const go = () => {
+    update(s => { replaceExercise(s, from.id, to.id, pick) })
+    close()
+    toast(t('Replaced with “{0}”', exerciseNameText(to)))
+  }
+  return <>
+    <h3>{t('Swap {0} for {1}', exerciseNameText(from), exerciseNameText(to))}</h3>
+    <div className="row between" style={{ marginBottom: 8 }}>
+      <h4 className="sec" style={{ margin: 0 }}>{t('Workouts')}</h4>
+      <Button size="sm" variant="ghost" onClick={() => setPick(new Set(ws.map(w => w.id)))}>{t('All')}</Button>
+    </div>
+    <div className="list" style={{ marginBottom: 14 }}>
+      {ws.map(w => <div key={w.id} className="item" {...tappable(() => flip(w.id))}>
+        <div className="grow"><div className="tt">{w.name}</div><div className="ss">{fmtDate(w.d, true)}</div></div>
+        {pick.has(w.id) && <Icon name="check" className="accent" />}
+      </div>)}
+    </div>
+    <Button variant="primary" icon="swap" disabled={!pick.size} onClick={go}>{t('Replace')}</Button>
   </>
 }
 export const exerciseDetailSheet = ex => ui().openSheet(close => <ExerciseDetail ex={ex} close={close} />)
