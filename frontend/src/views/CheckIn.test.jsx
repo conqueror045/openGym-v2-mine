@@ -367,9 +367,18 @@ describe('CheckIn — adding a card', () => {
     expect(mocks.S.lastGymCardId).toBe(mocks.S.gymCards[1].id)
   })
 
+  it('a 1D gym card (personal fork) is kept, with its format, and redrawn as Code 128', async () => {
+    mocks.MOBILE = true
+    mocks.scanCode.mockResolvedValue({ value: '0820', fmt: 'EAN_13' })
+    await openAdd()
+    await tap(sheetBtn('Scan'))
+    await tap(sheetBtn('Save card'))
+    expect(mocks.S.gymCards.at(-1)).toMatchObject({ value: '0820', fmt: 'ean13' })
+  })
+
   it('a barcode we could read but could not redraw is refused, and never reaches the form', async () => {
     mocks.MOBILE = true
-    mocks.scanCode.mockResolvedValue({ value: '5901234123457', fmt: 'EAN_13' })
+    mocks.scanCode.mockResolvedValue({ value: 'PDF-ONLY', fmt: 'PDF_417' })
     await openAdd()
     await tap(sheetBtn('Scan'))
     expect(mocks.toast).toHaveBeenCalledWith("That's not a QR code. Only QR cards can be shown here")
@@ -425,7 +434,7 @@ describe('CheckIn — adding a card', () => {
     await tap(sheetBtn('Scan'))
     const closeCam = vi.fn()
     act(() => { camRoot.render(mocks.sheets.at(-1)(closeCam)) })
-    await act(async () => { mocks.camera.onFound({ value: '5901234123457', fmt: 'EAN_13' }) })
+    await act(async () => { mocks.camera.onFound({ value: 'PDF-ONLY', fmt: 'PDF_417' }) })
     expect(closeCam).toHaveBeenCalledTimes(1)
     expect(mocks.toast).toHaveBeenCalledWith("That's not a QR code. Only QR cards can be shown here")
     expect(sheetBtn('Save card').disabled).toBe(true)
@@ -485,7 +494,7 @@ describe('CheckIn — importing a photo', () => {
   })
 
   it('a photo of a non-QR barcode is refused for the same reason a scan of one is', async () => {
-    mocks.importCodeFromImage.mockResolvedValue({ value: '5901234123457', fmt: 'CODE_128' })
+    mocks.importCodeFromImage.mockResolvedValue({ value: 'PDF-ONLY', fmt: 'PDF_417' })
     await openAdd()
     await pickFile()
     expect(mocks.toast).toHaveBeenCalledWith("That's not a QR code. Only QR cards can be shown here")
@@ -558,7 +567,7 @@ describe('CheckIn — editing a card', () => {
 
   it('a re-scan that is not a QR code cannot overwrite the working code already on the card', async () => {
     mocks.MOBILE = true
-    mocks.scanCode.mockResolvedValue({ value: '5901234123457', fmt: 'EAN_13' })
+    mocks.scanCode.mockResolvedValue({ value: 'PDF-ONLY', fmt: 'PDF_417' })
     await openEdit('b')
     await tap(sheetBtn('Re-scan'))
     await tap(sheetBtn('Save card'))

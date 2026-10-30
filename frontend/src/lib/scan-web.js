@@ -23,7 +23,7 @@ let _detector = null
 function nativeDetector() {
   if (_detector !== null) return _detector
   try {
-    _detector = (typeof BarcodeDetector === 'function') ? new BarcodeDetector({ formats: ['qr_code'] }) : false
+    _detector = (typeof BarcodeDetector === 'function') ? new BarcodeDetector({ formats: ['qr_code', 'code_128', 'code_39', 'code_93', 'codabar', 'ean_13', 'ean_8', 'itf', 'upc_a', 'upc_e'] }) : false
   } catch (e) { _detector = false }
   return _detector
 }

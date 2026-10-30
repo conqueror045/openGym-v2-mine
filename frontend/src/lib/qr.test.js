@@ -35,12 +35,12 @@ describe('canRenderFmt', () => {
     expect(canRenderFmt('qr')).toBe(true)
   })
 
-  it('rejects 1D and other 2D symbologies we cannot faithfully redraw', () => {
-    // These are readable by the scanner but lean-qr can't reproduce them, so a card in one of
-    // these formats must never be stored — it would display as the wrong bars at the turnstile.
-    for (const fmt of ['EAN_13', 'EAN_8', 'CODE_128', 'CODE_39', 'ITF', 'UPC_A', 'PDF_417', 'AZTEC', 'DATA_MATRIX']) {
-      expect(canRenderFmt(fmt)).toBe(false)
-    }
+  it('accepts 1D cards, redrawn as Code 128 (personal fork)', () => {
+    for (const fmt of ['EAN_13', 'EAN_8', 'CODE_128', 'CODE_39', 'ITF', 'UPC_A']) expect(canRenderFmt(fmt)).toBe(true)
+  })
+
+  it('rejects other 2D symbologies we cannot faithfully redraw', () => {
+    for (const fmt of ['PDF_417', 'AZTEC', 'DATA_MATRIX']) expect(canRenderFmt(fmt)).toBe(false)
   })
 
   it('rejects empty / unknown formats', () => {

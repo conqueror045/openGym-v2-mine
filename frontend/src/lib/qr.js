@@ -25,8 +25,12 @@ async function loadLeanQr() {
 // deliberately did not add, and a code we can't redraw faithfully is worse than not storing it —
 // it would look scannable but carry the wrong bars.
 export function canRenderFmt(fmt) {
-  return normalizeFmt(fmt) === 'qrcode'
+  return normalizeFmt(fmt) === 'qrcode' || isLinearFmt(fmt)
 }
+
+// Personal fork: 1D cards (the gym's plastic card) are redrawn as Code 128 (lib/code128.js).
+const LINEAR = ['code128', 'code39', 'code93', 'codabar', 'ean13', 'ean8', 'itf', 'upca', 'upce']
+export const isLinearFmt = fmt => LINEAR.includes(normalizeFmt(fmt))
 
 // mlkit reports BarcodeFormat as e.g. 'QR_CODE' | 'QrCode'; older callers may pass 'qr'. Fold
 // them all to a stable lower-case token we store and compare on.

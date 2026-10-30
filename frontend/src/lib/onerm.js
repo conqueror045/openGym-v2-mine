@@ -2,6 +2,8 @@ import { isAssisted } from './exercises.js'
 import { isSideSet } from './workout-model.js'
 import { entriesForExercise, metricRowsForEntry, workoutAt } from './history.js'
 import { currentDbLoad, entryDbLoad, workoutAs } from './dumbbells.js'
+import { onLifter } from './structuralBalance.js'
+import { bodyweightAt } from './relative-strength.js'
 // Estimated one-rep max (issue #18, extended issue #155).
 //
 // Deliberately knows nothing about the exercise database: an estimate needs a weight AND a
@@ -136,7 +138,14 @@ export function estimate1RM(w, r, formula = DEFAULT_FORMULA, rir = null) {
 // Best estimate out of one workout entry's completed sets.
 // `topW` is ignored on purpose: it records the working weight a user confirmed after the
 // exercise, with no rep count attached, so it cannot produce an estimate.
-export function bestSetOf(entry, formula = DEFAULT_FORMULA) {
+// Body weight for a workout: the weigh-in it was logged with, else the log around its date, else 0.
+export const bwOfWorkout = (S, w) => (Number(w?.bw) > 0 ? Number(w.bw) : bodyweightAt(S?.bodyweight, w ? workoutAt(w) : Date.now()) || 0)
+
+// `bw` (personal fork): for loaded bodyweight work (weighted pull-up, dip) the estimate runs on
+// body + plate and the body comes off again, so +50 x 3 reads as the plate you could single,
+// not as a 1RM of the plate alone. 0 keeps the old reading.
+export function bestSetOf(entry, formula = DEFAULT_FORMULA, bw = 0) {
+  const add = bw > 0 && entry && onLifter(entry) ? bw : 0
   // An assistance machine has no one-rep max to estimate: the load is the help you were given,
   // so Epley on it would rise as you got weaker and call that a record (issue #232). These
   // exercises stay out of the estimate, the curve and the strength list entirely.
@@ -147,17 +156,18 @@ export function bestSetOf(entry, formula = DEFAULT_FORMULA) {
       ? [s.sides.L, s.sides.R].filter(side => side?.done === true)
       : [s]
     sets.forEach(set => {
-      const est = estimate1RM(set.w, set.r, formula, set.rir ?? null)
+      let est = estimate1RM((Number(set.w) || 0) + add, set.r, formula, set.rir ?? null)
+      if (est !== null && add) est = Math.round((est - add) * 10) / 10
       if (est !== null && (!best || est > best.est)) best = { est, w: Number(set.w), r: Math.round(Number(set.r)) }
     })
   })
   return best
 }
 
-function bestSetOfEntries(entries, formula = DEFAULT_FORMULA) {
+function bestSetOfEntries(entries, formula = DEFAULT_FORMULA, bw = 0) {
   let best = null
   for (const entry of entries || []) {
-    const candidate = bestSetOf(entry, formula)
+    const candidate = bestSetOf(entry, formula, bw)
     if (candidate && (!best || candidate.est > best.est)) best = candidate
   }
   return best
@@ -171,7 +181,7 @@ export function e1rmSeries(S, exId, formula = formulaOf(S), as = currentDbLoad(S
   if (isAssisted(exId)) return []
   const pts = []
   ;(S.workouts || []).forEach(w => {
-    const best = bestSetOfEntries(entriesForExercise(workoutAs(w, exId, as), exId), formula)
+    const best = bestSetOfEntries(entriesForExercise(workoutAs(w, exId, as), exId), formula, bwOfWorkout(S, w))
     if (best) pts.push({ t: workoutAt(w), d: w.d, y: best.est, w: best.w, r: best.r })
   })
   return pts
@@ -188,7 +198,7 @@ export function best1RM(S, exId, formula = formulaOf(S), as) {
 // Did this workout beat every estimate that came before it? Used for the finish summary,
 // so it compares against history that does not yet contain `w`.
 export function is1RMRecord(S, exId, entry, formula = formulaOf(S)) {
-  const now = bestSetOf(entry, formula)
+  const now = bestSetOf(entry, formula, bwOfWorkout(S, S.active))
   if (!now) return null
   // Held against history read the way this session logged its weight (lib/dumbbells.js).
   const prev = best1RM(S, exId, formula, entryDbLoad(entry))

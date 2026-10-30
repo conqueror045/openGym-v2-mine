@@ -1,6 +1,6 @@
 import { metricEntriesForExercise, metricRowsForEntry, bestWeightForEntry, completedRepsOf, modeOf, workoutAt, countsWarmups } from './history.js'
 import { completedVolumeOf, isWarmupRow } from './workout-model.js'
-import { bestSetOf } from './onerm.js'
+import { bestSetOf, bwOfWorkout } from './onerm.js'
 import { beatsWeight } from './exercises.js'
 import { currentDbLoad, historyAs, volumeFactor, workoutAs } from './dumbbells.js'
 
@@ -69,7 +69,7 @@ export function exerciseHistory(S, exId, { limit = HISTORY_SESSIONS } = {}) {
   logged.forEach(({ w, en, mode: m, rows, warm }) => {
     const same = m === mode
     const value = same ? valueOf({ en, rows }) : null
-    const e1rm = m === 'reps' ? (bestSetOf(en)?.est ?? null) : null
+    const e1rm = m === 'reps' ? (bestSetOf(en, undefined, bwOfWorkout(S, w))?.est ?? null) : null
     const t = workoutAt(w)
     // "PR" goes on the session that first reached the all-time best, not on every session
     // that later matched it — one marker says where the record was set.

@@ -2548,6 +2548,9 @@ function PlanImport({ bundle, close }) {
 /* ============================ day override / assign ============================ */
 function DayOverride({ iso, close }) {
   const st = useStore(s => s.S)
+  // A day opens on what it holds: the sessions logged on it, or the routines planned for it.
+  // Changing the plan is one tap further, behind "Choose a different workout".
+  const [picking, setPicking] = useState(false)
   const hasOvr = st.dayPlan[iso] !== undefined
   // A fulfilled pin (a coach session pinned here and since done) reads as no override, as it does
   // everywhere else — the row to clear the leftover entry stays.
@@ -2590,10 +2593,24 @@ function DayOverride({ iso, close }) {
     <span className="lrow-i"><Icon name={glyphOf(r.emoji)} /></span>
     <div className="grow"><div className="tt">{r.name}</div><div className="ss">{pinnedOn[r.id] && pinnedOn[r.id] !== iso ? fmtDate(pinnedOn[r.id], true) : exCount(r.ex.length)}</div></div>
     {effIds.includes(r.id) && <Icon name="check" className="accent" />}</div>
+  const logged = workoutsOn(st, iso)
+  const plannedRs = effIds.map(id => st.routines.find(r => r.id === id)).filter(Boolean)
   return <>
     <h3>{fmtDate(iso, true)}</h3>
-    <div className="muted small" style={{ marginBottom: 12 }}>{t('Weekly plan:')} {weeklyNames.length ? deriveSessionName(weeklyNames) : t('Rest')}{changed && <span style={{ color: 'var(--orange)' }}> · {t('changed for this day')}</span>}<br />{t('Sick, missed a day or want a different session? Pick what to train instead.')}</div>
+    <h4 className="sec" style={{ marginTop: 0 }}>{logged.length ? t('Done') : plannedRs.length ? t('Planned') : t('Rest')}</h4>
+    {logged.length > 0 && <div className="list" style={{ marginBottom: 14 }}>
+      {logged.map(w => <WorkoutRow key={w.id} w={w} onClick={() => { close(); workoutDetailSheet(w) }} />)}
+    </div>}
+    {!logged.length && plannedRs.length > 0 && <div className="list" style={{ marginBottom: 14 }}>
+      {plannedRs.map(r => <div key={r.id} className="item">
+        <span className="lrow-i"><Icon name={glyphOf(r.emoji)} /></span>
+        <div className="grow"><div className="tt">{r.name}</div><div className="ss">{r.ex.map(x => exOr(x.id).n).join(' · ')}</div></div>
+      </div>)}
+    </div>}
     {missed && <div style={{ marginBottom: 14 }}><Button variant="primary" icon="checkCircle" onClick={logIt}>{t('Log this workout')}</Button></div>}
+    {!picking && <Button variant="ghost" className="dim" icon="swap" onClick={() => setPicking(true)}>{t('Choose a different workout')}</Button>}
+    {picking && <>
+    <div className="muted small" style={{ marginBottom: 12 }}>{t('Weekly plan:')} {weeklyNames.length ? deriveSessionName(weeklyNames) : t('Rest')}{changed && <span style={{ color: 'var(--orange)' }}> · {t('changed for this day')}</span>}<br />{t('Sick, missed a day or want a different session? Pick what to train instead.')}</div>
     {canNote && <div className="day-note" style={{ marginBottom: 14 }}>
       <div className="item day-note-row" {...tappable(() => dayNoteSheet(iso))}>
         <span className="lrow-i" style={{ background: 'var(--surface-3)' }}><Icon name={note?.tag ? DAY_NOTE_ICON[note.tag] : 'note'} /></span>
@@ -2612,6 +2629,7 @@ function DayOverride({ iso, close }) {
       <div className="item" {...tappable(() => set('rest'))}><span className="lrow-i" style={{ background: 'var(--surface-3)' }}><Icon name="moon" /></span><div className="grow"><div className="tt">{t('Rest / skip this day')}</div></div>{effIds.length === 0 && <Icon name="check" className="accent" />}</div>
       {hasOvr && <div className="item" {...tappable(() => set(''))}><span className="lrow-i" style={{ background: 'var(--surface-3)' }}><Icon name="reset" /></span><div className="grow"><div className="tt">{t('Back to weekly plan')}</div></div></div>}
     </div>
+    </>}
   </>
 }
 export const dayOverrideSheet = iso => ui().openSheet(close => <DayOverride iso={iso} close={close} />)
@@ -3022,7 +3040,7 @@ function mediaGoesToo(rec) {
   const n = workoutMediaOf(rec, Infinity).length
   return n ? ' ' + tn('Its photo or video is deleted with it.', 'Its {0} photos or videos are deleted with it.', n) : ''
 }
-export const workoutDetailSheet = w => ui().openSheet(close => <WorkoutDetail w={w} close={close} />)
+export const workoutDetailSheet = w => ui().openSheet(close => <WorkoutDetail w={w} close={close} />, { kind: 'full' })
 
 /* ============================ calendar ============================ */
 function Calendar({ start, close }) {

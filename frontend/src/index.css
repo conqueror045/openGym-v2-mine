@@ -1570,6 +1570,8 @@ body.no-tabbar #timer.working{box-shadow:inset 0 var(--hair) 0 var(--acc),0 -10p
   animation:sheetup .34s var(--ease);
   overscroll-behavior:contain;touch-action:pan-y;will-change:transform;
 }
+/* Full screen, still a sheet (drag down or back to close): a past workout to read at leisure. */
+.sheet.full{top:var(--sat);max-height:none;border-radius:0}
 /* A sheet with a field (.picker-search) or marked .kb-lift (the connect sheet) stands on the
    keyboard instead of letting the system scroll the pinned page to reach the field: see
    lib/use-sheet-keyboard.js for the two variables. */

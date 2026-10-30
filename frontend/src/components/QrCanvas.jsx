@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { renderQrToCanvas } from '../lib/qr.js'
+import { renderQrToCanvas, isLinearFmt } from '../lib/qr.js'
+import { renderCode128 } from '../lib/code128.js'
 import { t } from '../lib/i18n.js'
 
 // Renders a gym check-in code as a QR image on a <canvas>. lean-qr draws one module per pixel;
@@ -10,24 +11,25 @@ import { t } from '../lib/i18n.js'
 // The lib loads via dynamic import, so the first paint is a frame behind; a plain box holds the
 // space until then. A render failure (empty value, lib load error) shows nothing rather than a
 // broken canvas — the caller decides what an unusable card looks like.
-export default function QrCanvas({ value, size = 240, className = '' }) {
+export default function QrCanvas({ value, fmt = 'qrcode', size = 240, className = '' }) {
+  const linear = isLinearFmt(fmt)
   const ref = useRef(null)
   const [ok, setOk] = useState(false)
 
   useEffect(() => {
     let alive = true
     setOk(false)
-    renderQrToCanvas(ref.current, value)
+    ;(linear ? Promise.resolve(renderCode128(ref.current, value)) : renderQrToCanvas(ref.current, value))
       .then(mods => { if (alive) setOk(mods > 0) })
       .catch(() => { if (alive) setOk(false) })
     return () => { alive = false }
-  }, [value])
+  }, [value, linear])
 
   return (
     <canvas
       ref={ref}
       className={'qr-canvas ' + className}
-      style={{ width: size, height: size, opacity: ok ? 1 : 0 }}
+      style={{ width: linear ? size * 1.4 : size, height: linear ? size * 0.55 : size, opacity: ok ? 1 : 0 }}
       aria-label={t('QR code')}
     />
   )
